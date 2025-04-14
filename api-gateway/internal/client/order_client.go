@@ -4,7 +4,7 @@ import (
     "context"
     "google.golang.org/grpc"
     "log"
-    pb "ecommerce/proto/order"
+    pborder "github.com/DanikDaraboz/ecommerce/proto/order"
 )
 
 type OrderClient struct {

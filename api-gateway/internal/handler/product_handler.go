@@ -2,7 +2,7 @@ package handler
 
 import (
     "api-gateway/internal/client"
-    pb "ecommerce/proto/inventory"
+    pb "github.com/DanikDaraboz/ecommerce/proto/inventory"
     "github.com/gin-gonic/gin"
     "net/http"
     "strconv"

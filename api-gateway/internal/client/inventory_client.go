@@ -4,7 +4,7 @@ import (
     "context"
     "google.golang.org/grpc"
     "log"
-    pb "ecommerce-platform/proto/inventory"
+    pb "github.com/DanikDaraboz/ecommerce/proto/inventory"
 )
 
 type InventoryClient struct {
