@@ -1,4 +1,4 @@
-module ecommerce/proto
+module github.com/DanikDaraboz/ecommerce/proto
 
 go 1.23.4
 
