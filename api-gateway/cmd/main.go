@@ -1,41 +1,37 @@
 package main
 
 import (
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"github.com/danikdaraboz/ecommerce/api-gateway/internal/config"
-	"github.com/danikdaraboz/ecommerce/api-gateway/internal/service"
-	"github.com/danikdaraboz/ecommerce/api-gateway/internal/router"
-	"github.com/gin-gonic/gin"
+    "api-gateway/internal/config"
+    "api-gateway/internal/handler"
+    "api-gateway/internal/middleware"
+    "github.com/gin-gonic/gin"
+    "log"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
+    cfg, err := config.Load()
+    if err != nil {
+        log.Fatalf("Failed to load config: %v", err)
+    }
 
-	// Создание gRPC клиентов
-	inventoryService := service.NewInventoryClient(cfg.InventoryServiceAddress)
-	orderService := service.NewOrderClient(cfg.OrderServiceAddress)
+    router := gin.Default()
+    router.Use(middleware.Logger())
 
-	// Настройка маршрутов Gin
-	r := router.SetupRouter(inventoryService, orderService)
+    // Initialize gRPC clients
+    inventoryClient, err := handler.NewInventoryClient(cfg.InventoryServiceAddr)
+    if err != nil {
+        log.Fatalf("Failed to connect to inventory service: %v", err)
+    }
+    orderClient, err := handler.NewOrderClient(cfg.OrderServiceAddr)
+    if err != nil {
+        log.Fatalf("Failed to connect to order service: %v", err)
+    }
 
-	// Запуск сервера
-	go func() {
-		if err := r.Run(":" + cfg.GatewayPort); err != nil {
-			log.Fatalf("Failed to start gateway server: %v", err)
-		}
-	}()
+    // Setup handlers
+    handler.SetupProductRoutes(router, inventoryClient)
+    handler.SetupOrderRoutes(router, orderClient)
 
-	// Обработка завершения работы
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	log.Println("Shutting down...")
+    if err := router.Run(":8080"); err != nil {
+        log.Fatalf("Failed to run server: %v", err)
+    }
 }
