@@ -3,12 +3,13 @@ package grpc
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/danikdaraboz/ecommerce/order-service/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/order-service/internal/domain"
 	"github.com/danikdaraboz/ecommerce/order-service/internal/usecase"
 	"github.com/danikdaraboz/ecommerce/order-service/pb"
 )
@@ -51,9 +52,9 @@ func (h *OrderHandler) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*
 		return nil, status.Error(codes.InvalidArgument, "order ID is required")
 	}
 
-	order, err := h.orderUC.GetOrder(ctx, req.GetId())
+	order, err := h.orderUC.GetOrderByID(ctx, req.GetId())
 	if err != nil {
-		if errors.Is(err, model.ErrOrderNotFound) {
+		if errors.Is(err, domain.ErrOrderNotFound) {
 			return nil, status.Error(codes.NotFound, "order not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())

@@ -14,6 +14,9 @@ import (
 	deliverygrpc "github.com/danikdaraboz/ecommerce/order-service/internal/delivery/grpc"
 	"github.com/danikdaraboz/ecommerce/order-service/internal/repository/mongodb"
 	"github.com/danikdaraboz/ecommerce/order-service/internal/usecase"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"context"
 )
 
 func main() {
@@ -27,12 +30,18 @@ func main() {
 	}
 
 	// Initialize MongoDB repository
-	repo, err := mongodb.NewOrderRepository(cfg.MongoURI, cfg.MongoDBName)
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.MongoURI))
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	collection := mongoClient.Database(cfg.MongoDBName).Collection("orders")
+	repo := mongodb.NewOrderRepositoryMongo(collection)
+
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer func() {
-		if err := repo.Close(); err != nil {
+		if err := mongoClient.Disconnect(context.Background()); err != nil {
 			log.Printf("Error closing MongoDB connection: %v", err)
 		}
 	}()

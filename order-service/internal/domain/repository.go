@@ -5,10 +5,6 @@ import (
 	"github.com/danikdaraboz/ecommerce/order-service/internal/domain/model"
 )
 
-var (
-	ErrOrderNotFound = errors.New("order not found")
-	ErrInvalidOrder  = errors.New("invalid order")
-)
 
 type OrderRepository interface {
 	Create(ctx context.Context, order *model.Order) (*model.Order, error)
