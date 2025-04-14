@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/danikdaraboz/ecommerce/api-gateway/proto"
+	"github.com/danikdaraboz/ecommerce/api-gateway/pb"
 	"google.golang.org/grpc"
 )
 
