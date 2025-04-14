@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
-	"inventoryservice/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain/model"
 )
 
 var (

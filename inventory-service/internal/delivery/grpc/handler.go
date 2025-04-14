@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"inventoryservice/internal/usecase"
-	"inventoryservice/internal/domain/model"
-	"inventoryservice/pb"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/usecase"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/inventory-service/pb"
 )
 
 type InventoryHandler struct {

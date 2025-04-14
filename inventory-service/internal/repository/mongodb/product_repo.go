@@ -10,16 +10,20 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"inventoryservice/internal/domain"
-	"inventoryservice/internal/domain/model"
-	"inventoryservice/internal/repository/mongodb/mappings"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/repository/mongodb/mappings"
 )
 
+// Ensure ProductRepository implements domain.ProductRepository
+var _ domain.ProductRepository = (*ProductRepository)(nil)
+
 type ProductRepository struct {
+	client     *mongo.Client
 	collection *mongo.Collection
 }
 
-func NewProductRepository(uri, dbName string) (*ProductRepository, error) {
+func NewProductRepository(uri, dbName string) (domain.ProductRepository, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -28,12 +32,26 @@ func NewProductRepository(uri, dbName string) (*ProductRepository, error) {
 		return nil, err
 	}
 
+	// Verify the connection
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProductRepository{
+		client:     client,
 		collection: client.Database(dbName).Collection("products"),
 	}, nil
 }
 
 func (r *ProductRepository) Create(ctx context.Context, product *model.Product) (*model.Product, error) {
+	if product == nil {
+		return nil, errors.New("product cannot be nil")
+	}
+
+	product.CreatedAt = time.Now()
+	product.UpdatedAt = time.Now()
+
 	dbProduct, err := mappings.ToDBModel(product)
 	if err != nil {
 		return nil, err
@@ -49,6 +67,10 @@ func (r *ProductRepository) Create(ctx context.Context, product *model.Product) 
 }
 
 func (r *ProductRepository) FindByID(ctx context.Context, id string) (*model.Product, error) {
+	if id == "" {
+		return nil, domain.ErrInvalidID
+	}
+
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, domain.ErrInvalidID
@@ -67,33 +89,64 @@ func (r *ProductRepository) FindByID(ctx context.Context, id string) (*model.Pro
 }
 
 func (r *ProductRepository) Update(ctx context.Context, product *model.Product) error {
+	if product == nil {
+		return errors.New("product cannot be nil")
+	}
+
+	product.UpdatedAt = time.Now()
+
 	dbProduct, err := mappings.ToDBModel(product)
 	if err != nil {
 		return err
 	}
 
-	_, err = r.collection.ReplaceOne(
+	result, err := r.collection.ReplaceOne(
 		ctx,
 		bson.M{"_id": dbProduct.ID},
 		dbProduct,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrProductNotFound
+	}
+
+	return nil
 }
 
 func (r *ProductRepository) Delete(ctx context.Context, id string) error {
+	if id == "" {
+		return domain.ErrInvalidID
+	}
+
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return domain.ErrInvalidID
 	}
 
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": objID})
-	return err
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return domain.ErrProductNotFound
+	}
+
+	return nil
 }
 
 func (r *ProductRepository) List(ctx context.Context, skip, limit int64) ([]*model.Product, error) {
+	if skip < 0 || limit <= 0 {
+		return nil, errors.New("invalid pagination parameters")
+	}
+
 	opts := options.Find().
 		SetSkip(skip).
-		SetLimit(limit)
+		SetLimit(limit).
+		SetSort(bson.M{"created_at": -1}) // Sort by newest first
 
 	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
 	if err != nil {
@@ -110,11 +163,15 @@ func (r *ProductRepository) List(ctx context.Context, skip, limit int64) ([]*mod
 		products = append(products, mappings.ToDomainModel(&dbProduct))
 	}
 
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
 	return products, nil
 }
 
 func (r *ProductRepository) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return r.collection.Database().Client().Disconnect(ctx)
+	return r.client.Disconnect(ctx)
 }

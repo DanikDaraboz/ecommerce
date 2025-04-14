@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"inventoryservice/internal/domain"
-	"inventoryservice/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain/model"
 )
 
 var (

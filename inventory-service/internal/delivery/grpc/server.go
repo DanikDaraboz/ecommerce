@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"google.golang.org/grpc"
-	"inventoryservice/pb"
+	"github.com/danikdaraboz/ecommerce/inventory-service/pb"
 )
 
 type InventoryServer interface {

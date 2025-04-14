@@ -3,7 +3,7 @@ package mappings
 import (
 	"time"
 
-	"inventoryservice/internal/domain/model"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

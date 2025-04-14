@@ -10,10 +10,11 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"inventoryservice/internal/config"
-	deliverygrpc "inventoryservice/internal/delivery/grpc"
-	"inventoryservice/internal/repository/mongodb"
-	"inventoryservice/internal/usecase"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/config"
+	deliverygrpc "github.com/danikdaraboz/ecommerce/inventory-service/internal/delivery/grpc"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/domain" // Add this import
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/repository/mongodb"
+	"github.com/danikdaraboz/ecommerce/inventory-service/internal/usecase"
 )
 
 func main() {
@@ -28,14 +29,19 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Initialize MongoDB repository
-	repo, err := mongodb.NewProductRepository(cfg.MongoURI, cfg.MongoDBName)
+	// Initialize MongoDB repository as interface type
+	var repo domain.ProductRepository
+	repo, err = mongodb.NewProductRepository(cfg.MongoURI, cfg.MongoDBName)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
+
+	// Type assertion for Close() with safety check
 	defer func() {
-		if err := repo.(*mongodb.ProductRepository).Close(); err != nil {
-			log.Printf("Error closing MongoDB connection: %v", err)
+		if mongoRepo, ok := repo.(interface{ Close() error }); ok {
+			if err := mongoRepo.Close(); err != nil {
+				log.Printf("Error closing MongoDB connection: %v", err)
+			}
 		}
 	}()
 
